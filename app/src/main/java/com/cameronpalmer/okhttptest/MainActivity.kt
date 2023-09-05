@@ -45,8 +45,21 @@ class MainActivity : ComponentActivity() {
     fun run(url: String) {
         val request: Request = Builder().url(url).build()
         val call = client.newCall(request)
-        val response = call.execute()
-        Log.d("OkHttp!", response.body?.string()!!)
+
+        val coroutineScope = CoroutineScope(Dispatchers.IO)
+        coroutineScope.launch {
+            Log.d("OkHttp!", "Background thread")
+
+            val response = call.execute()
+            launch(Dispatchers.Main) {
+                callback(response.body?.string())
+            }
+        }
+    }
+
+    fun callback(body: String?) {
+        Log.d("OkHttp!", "Callback")
+        Log.d("OkHttp!", body!!)
     }
 }
 
