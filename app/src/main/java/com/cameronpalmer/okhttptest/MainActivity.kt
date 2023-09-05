@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Android")
+                    Greeting("Hello, Android!")
                 }
             }
         }
@@ -57,16 +57,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // This is our callback on the main thread
     fun callback(body: String?) {
         Log.d("OkHttp!", "Callback")
         Log.d("OkHttp!", body!!)
+        setContent {
+            Greeting(name = body)
+        }
     }
 }
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
-        text = "Hello $name!",
+        text = "$name!",
         modifier = modifier
     )
 }
@@ -75,6 +79,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun GreetingPreview() {
     OkHttpTestTheme {
-        Greeting("Android")
+        Greeting("Hello, Android!")
     }
 }
