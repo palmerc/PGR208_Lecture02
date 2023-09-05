@@ -2,6 +2,10 @@
 
 ### Running the app
 
+Zeroth, create the virtual envirnment if it does not exits
+
+    python -m venv venv
+
 First, enter the virtual environment (a sandbox)
 
     source venv/bin/activate

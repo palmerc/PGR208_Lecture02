@@ -1,6 +1,7 @@
 package com.cameronpalmer.okhttptest
 
 import android.os.Bundle
+import android.os.SystemClock.sleep
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,7 +19,11 @@ import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Request.Builder
-
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import okio.ByteString
+import okio.ByteString.Companion.decodeHex
 
 
 class MainActivity : ComponentActivity() {
@@ -27,7 +32,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        run("https://pokeapi.co/api/v2/pokemon")
+        val wss_url = "ws://192.168.7.79:8765"
+        run(wss_url)
 
         setContent {
             OkHttpTestTheme {
@@ -43,29 +49,48 @@ class MainActivity : ComponentActivity() {
     }
 
     fun run(url: String) {
-        val request: Request = Builder().url(url).build()
-        val call = client.newCall(request)
 
-        val coroutineScope = CoroutineScope(Dispatchers.IO)
-        coroutineScope.launch {
-            Log.d("OkHttp!", "Background thread")
+        val wss_request: Request = Builder().url(url).build()
+        val webSocket = OkHttpClient().newWebSocket(wss_request, EchoWebSocketListener())
 
-            val response = call.execute()
-            launch(Dispatchers.Main) {
-                callback(response.body?.string())
-            }
-        }
-    }
-
-    // This is our callback on the main thread
-    fun callback(body: String?) {
-        Log.d("OkHttp!", "Callback")
-        Log.d("OkHttp!", body!!)
-        setContent {
-            Greeting(name = body)
-        }
     }
 }
+
+private class EchoWebSocketListener : WebSocketListener() {
+    override fun onOpen(webSocket: WebSocket, response: Response) {
+        val messageString = "Mary had a little lamb"
+        val messageByteString = "deadbeef".decodeHex()
+
+        webSocket.send(messageString)
+        webSocket.send(messageByteString)
+    }
+
+    override fun onMessage(webSocket: WebSocket, text: String) {
+        output("Receiving : " + text!!)
+    }
+
+    override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+        output("Receiving bytes : " + bytes!!.hex())
+    }
+
+    override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+        webSocket!!.close(NORMAL_CLOSURE_STATUS, null)
+        output("Closing : $code / $reason")
+    }
+
+    override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+        output("Error : " + t.message)
+    }
+
+    companion object {
+        private val NORMAL_CLOSURE_STATUS = 1000
+    }
+
+    private fun output(txt: String) {
+        Log.v("WSS", txt)
+    }
+}
+
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
