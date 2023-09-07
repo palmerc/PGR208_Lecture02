@@ -1,0 +1,66 @@
+<h2>Lecture 2 - Networking</h2>
+<p>Let's make our lives easier by enabling LiveEdit. Cool feature that will dynamically update the code on the emulator device.</p>
+<p>Creating another new activity we need to adopt the correct classes to import. Generally, we might refer to these as dependencies and more broadly this is a form of package management. Without it you would need to drag source code into your project which is obviously a headache.</p>
+<pre><code>// define a BOM and its version
+implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
+
+// define any required OkHttp artifacts without version
+implementation("com.squareup.okhttp3:okhttp")
+implementation("com.squareup.okhttp3:logging-interceptor")
+</code></pre>
+<p>A BOM or Bill of Materials is an umbrella that allows you to set the version of associated packages without having to specify each one repeatedly.</p>
+<p>This networking package is called OkHttp and was developed by Square.</p>
+<ul>
+<li><a href="https://squareup.com/us/en?v=all">Square (The Company)</a></li>
+<li><a href="https://square.github.io/okhttp/">OkHttp on GitHub</a></li>
+</ul>
+<p>Next we add some code to HTTP GET from the Internet. It doesn't work, why?</p>
+<pre><code>FATAL EXCEPTION: main
+Process: com.cameronpalmer.okhttptest, PID: 8386
+java.lang.RuntimeException: Unable to start activity ComponentInfo{com.cameronpalmer.okhttptest/com.cameronpalmer.okhttptest.MainActivity}: android.os.NetworkOnMainThreadException
+</code></pre>
+<p>No networking on the main thread. So we need to operate on a background thread.</p>
+<p>We could override this by manipulating the <code>ThreadPolicy</code> to <code>permitAll()</code></p>
+<p><a href="https://developer.android.com/reference/kotlin/android/os/StrictMode.ThreadPolicy.Builder">ThreadPolicy Builder Docs</a></p>
+<p>However, this generally a bad plan, so let's instead adopt <code>CoroutineScope</code></p>
+<pre><code>fun run(url: String) {
+    val request: Request = Builder().url(url).build()
+    val call = client.newCall(request)
+
+    val coroutineScope = CoroutineScope(Dispatchers.IO)
+    coroutineScope.launch {
+        Log.d("OkHttp!", "Background thread")
+
+        val response = call.execute()
+        launch(Dispatchers.Main) {
+            callback(response.body?.string())
+        }
+    }
+}
+
+// The callback will arrive on the main thread
+fun callback(body: String?) {
+    Log.d("OkHttp!", "Callback")
+    Log.d("OkHttp!", body!!)
+}
+</code></pre>
+<p>We never go to our breakpoint. Why? Logcat Time</p>
+<pre><code>FATAL EXCEPTION: DefaultDispatcher-worker-1
+Process: com.cameronpalmer.okhttptest, PID: 8703
+java.lang.SecurityException: Permission denied (missing INTERNET permission?)
+</code></pre>
+<p>The Android Manifest is where critical information about the app resides. Including the location of where the 'Main' function / Activity is and permissions the app uses.</p>
+<ul>
+<li><a href="https://developer.android.com/guide/topics/manifest/manifest-intro">AndroidManifest.xml</a></li>
+<li><a href="https://developer.android.com/guide/topics/manifest/uses-permission-element">uses-permission</a></li>
+<li><a href="https://developer.android.com/guide/topics/permissions/overview">Permissions overview</a></li>
+<li><a href="https://developer.android.com/training/basics/network-ops/connecting">Networking - Connecting</a></li>
+</ul>
+<p>It is an Install time permission:</p>
+<pre><code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+</code></pre>
+<p>We've downloaded the data from our remote endpoint but we did not display it on screen.
+It can be found, once again in Logcat.</p>
+<p>Briefly looking at Log
+<a href="https://developer.android.com/reference/kotlin/android/util/Log">Android Logging - Logcat</a></p>
+<p><a href="https://discord.gg/fKgkdJMF|https://discord.gg/fKgkdJMF">Discord Link</a></p>
